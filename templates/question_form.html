@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Add Question &mdash; {{ poll.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <h1 class="h3 mb-1">Add a Question</h1>
+        <p class="text-muted mb-4">Poll: <strong>{{ poll.title }}</strong></p>
+
+        <div class="card">
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {{ question_form|crispy }}
+
+                    <hr>
+                    <h6 class="mb-3">Answer Choices</h6>
+                    {{ formset.management_form }}
+                    {% if formset.non_form_errors %}
+                        <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+                    {% endif %}
+                    <div id="choice-rows">
+                        {% for choice_form in formset %}
+                            <div class="mb-2 choice-row d-flex gap-2">
+                                <div class="flex-grow-1">{{ choice_form.text }}</div>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-choice-btn" title="Remove option">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" id="add-choice-btn" class="btn btn-outline-secondary btn-sm mb-3">
+                        <i class="bi bi-plus-lg"></i> Add another option
+                    </button>
+                    <p class="form-text">Fill in at least two choices. There's no limit on how many options you can add.</p>
+
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <a href="{% url 'poll_manage' poll.pk %}" class="btn btn-outline-secondary">Back to Poll</a>
+                        <button type="submit" class="btn btn-primary">Save Question</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const totalForms = document.getElementById('id_choices-TOTAL_FORMS');
+        const rowsContainer = document.getElementById('choice-rows');
+        const addBtn = document.getElementById('add-choice-btn');
+
+        addBtn.addEventListener('click', function () {
+            const index = parseInt(totalForms.value, 10);
+            const row = document.createElement('div');
+            row.className = 'mb-2 choice-row d-flex gap-2';
+            row.innerHTML =
+                '<div class="flex-grow-1">' +
+                '<input type="text" name="choices-' + index + '-text" class="form-control" placeholder="Choice text" id="id_choices-' + index + '-text">' +
+                '</div>' +
+                '<button type="button" class="btn btn-outline-danger btn-sm remove-choice-btn" title="Remove option"><i class="bi bi-x-lg"></i></button>';
+            rowsContainer.appendChild(row);
+            totalForms.value = index + 1;
+        });
+
+        rowsContainer.addEventListener('click', function (event) {
+            const btn = event.target.closest('.remove-choice-btn');
+            if (!btn) return;
+            const row = btn.closest('.choice-row');
+            row.querySelector('input').value = '';
+            row.style.display = 'none';
+        });
+    });
+</script>
+{% endblock %}

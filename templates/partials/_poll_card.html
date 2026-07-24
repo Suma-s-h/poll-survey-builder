@@ -1,0 +1,44 @@
+<div class="col-md-6 col-lg-4">
+    <div class="card h-100 poll-card">
+        <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                <h5 class="card-title mb-0">{{ poll.title }}</h5>
+                {% if poll.effective_status == 'active' %}
+                    <span class="badge bg-success">Active</span>
+                {% elif poll.effective_status == 'draft' %}
+                    <span class="badge bg-warning text-dark">Draft</span>
+                {% else %}
+                    <span class="badge bg-secondary">Closed</span>
+                {% endif %}
+            </div>
+            {% if poll.category %}
+                <span class="badge text-bg-light border mb-2 align-self-start">{{ poll.category.name }}</span>
+            {% endif %}
+            {% if poll.description %}
+                <p class="card-text text-muted small">{{ poll.description|truncatewords:20 }}</p>
+            {% endif %}
+            <ul class="list-unstyled small text-muted mb-3">
+                <li><i class="bi bi-person"></i> {{ poll.creator.username }}</li>
+                <li><i class="bi bi-calendar-plus"></i> Created {{ poll.created_at|date:'M j, Y' }}</li>
+                <li>
+                    <i class="bi bi-calendar-x"></i>
+                    {% if poll.end_date %}Closes {{ poll.end_date|date:'M j, Y' }}{% else %}No closing date{% endif %}
+                </li>
+                <li><i class="bi bi-check2-square"></i> {{ poll.total_votes }} vote{{ poll.total_votes|pluralize }}</li>
+                <li><i class="bi bi-list-ul"></i> {{ poll.total_options }} option{{ poll.total_options|pluralize }}</li>
+                {% if not poll.is_public %}<li><i class="bi bi-eye-slash"></i> Private</li>{% endif %}
+            </ul>
+            <div class="mt-auto d-flex flex-wrap gap-2">
+                <a href="{% url 'poll_detail' poll.pk %}" class="btn btn-sm btn-outline-primary flex-fill">View</a>
+                <a href="{% url 'poll_vote' poll.pk %}" class="btn btn-sm btn-primary flex-fill">Vote</a>
+                {% if user == poll.creator %}
+                    <a href="{% url 'poll_edit' poll.pk %}" class="btn btn-sm btn-outline-dark flex-fill">Edit</a>
+                    <form method="post" action="{% url 'poll_delete' poll.pk %}" class="flex-fill" onsubmit="return confirm('Delete this poll and all its data? This cannot be undone.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">Delete</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,31 @@
+{% if activities %}
+    <ul class="list-group list-group-flush">
+        {% for activity in activities %}
+            <li class="list-group-item d-flex align-items-start gap-3 px-0">
+                <span class="activity-dot
+                    {% if activity.activity_type == 'created' %}bg-primary
+                    {% elif activity.activity_type == 'updated' %}bg-warning
+                    {% elif activity.activity_type == 'closed' %}bg-secondary
+                    {% else %}bg-success{% endif %}"></span>
+                <div class="flex-grow-1">
+                    <div>
+                        {% if activity.activity_type == 'created' %}
+                            <strong>New poll created:</strong>
+                        {% elif activity.activity_type == 'updated' %}
+                            <strong>Poll updated:</strong>
+                        {% elif activity.activity_type == 'closed' %}
+                            <strong>Poll closed:</strong>
+                        {% else %}
+                            <strong>Votes submitted:</strong>
+                        {% endif %}
+                        <a href="{% url 'poll_detail' activity.poll_id %}">{{ activity.poll.title }}</a>
+                    </div>
+                    {% if activity.message %}<div class="small text-muted">{{ activity.message }}</div>{% endif %}
+                </div>
+                <span class="text-muted small text-nowrap">{{ activity.created_at|timesince }} ago</span>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="text-muted mb-0">{{ empty_message|default:'No activity yet.' }}</p>
+{% endif %}

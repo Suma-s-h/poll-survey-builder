@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 mb-1">Analytics</h1>
+    <p class="text-muted mb-0">Platform-wide trends across {{ stats.total_polls }} polls and {{ stats.total_responses }} responses.</p>
+</div>
+
+<div class="row g-3 mb-4">
+    {% include 'partials/_stat_card.html' with icon='bi-collection' color='primary' label='Total Polls' value=summary.total_polls %}
+    {% include 'partials/_stat_card.html' with icon='bi-bar-chart-line' color='info' label='Total Responses' value=summary.total_responses %}
+    {% include 'partials/_stat_card.html' with icon='bi-people' color='warning' label='Participants' value=summary.participants %}
+    {% include 'partials/_stat_card.html' with icon='bi-graph-up-arrow' color='success' label='Avg Responses / Poll' value=summary.avg_responses_per_poll %}
+    {% include 'partials/_stat_card.html' with icon='bi-speedometer2' color='danger' label='Avg Participation Rate' value=summary.avg_participation_rate|stringformat:'s'|add:'%' %}
+    {% include 'partials/_stat_card.html' with icon='bi-trophy-fill' color='primary' label='Most Popular Poll' value=summary.most_popular_poll|truncatechars:22 %}
+    {% include 'partials/_stat_card.html' with icon='bi-stars' color='info' label='Newest Poll' value=summary.newest_poll|truncatechars:22 %}
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 card-title">Votes Per Day <span class="text-muted fw-normal">(last 14 days)</span></h2>
+                <canvas id="votesPerDayChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 card-title">Daily Active Participants <span class="text-muted fw-normal">(last 14 days)</span></h2>
+                <canvas id="dailyParticipantsChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 card-title">Poll Status Distribution</h2>
+                <canvas id="statusChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 card-title">Votes By Category</h2>
+                <canvas id="votesByCategoryChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 card-title">Responses Per Poll</h2>
+                <canvas id="responsesPerPollChart" height="260"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 card-title">Top 10 Most Popular Polls</h2>
+                <canvas id="mostPopularChart" height="260"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 card-title">Polls Created Per Month</h2>
+                <canvas id="monthlyActivityChart" height="240"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 card-title">Most Active Users</h2>
+                <canvas id="mostActiveUsersChart" height="240"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ analytics.votes_per_day|json_script:"votes-per-day-data" }}
+{{ analytics.daily_active_participants|json_script:"daily-participants-data" }}
+{{ analytics.responses_per_poll|json_script:"responses-per-poll-data" }}
+{{ analytics.most_popular_polls|json_script:"most-popular-data" }}
+{{ analytics.status_distribution|json_script:"status-distribution-data" }}
+{{ analytics.monthly_labels|json_script:"monthly-labels-data" }}
+{{ analytics.monthly_polls|json_script:"monthly-polls-data" }}
+{{ analytics.votes_by_category|json_script:"votes-by-category-data" }}
+{{ analytics.most_active_users|json_script:"most-active-users-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    const readJson = (id) => JSON.parse(document.getElementById(id).textContent);
+    const palette = {
+        primary: '#0d6efd', success: '#198754', info: '#0dcaf0',
+        warning: '#ffc107', danger: '#dc3545', secondary: '#6c757d',
+    };
+    const categoryPalette = [palette.primary, palette.success, palette.info, palette.warning, palette.danger, palette.secondary, '#6610f2'];
+
+    const votesPerDay = readJson('votes-per-day-data');
+    new Chart(document.getElementById('votesPerDayChart'), {
+        type: 'line',
+        data: {
+            labels: votesPerDay.map(row => row.label),
+            datasets: [{
+                label: 'Votes',
+                data: votesPerDay.map(row => row.value),
+                borderColor: palette.primary,
+                backgroundColor: palette.primary + '33',
+                tension: 0.35,
+                fill: true,
+            }],
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } },
+    });
+
+    const dailyParticipants = readJson('daily-participants-data');
+    new Chart(document.getElementById('dailyParticipantsChart'), {
+        type: 'line',
+        data: {
+            labels: dailyParticipants.map(row => row.label),
+            datasets: [{
+                label: 'Active Participants',
+                data: dailyParticipants.map(row => row.value),
+                borderColor: palette.success,
+                backgroundColor: palette.success + '33',
+                tension: 0.35,
+                fill: true,
+            }],
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } },
+    });
+
+    const statusDistribution = readJson('status-distribution-data');
+    new Chart(document.getElementById('statusChart'), {
+        type: 'pie',
+        data: {
+            labels: statusDistribution.map(row => row.label),
+            datasets: [{
+                data: statusDistribution.map(row => row.value),
+                backgroundColor: [palette.success, palette.secondary, palette.warning],
+            }],
+        },
+    });
+
+    const votesByCategory = readJson('votes-by-category-data');
+    new Chart(document.getElementById('votesByCategoryChart'), {
+        type: 'doughnut',
+        data: {
+            labels: votesByCategory.map(row => row.poll__category__name),
+            datasets: [{
+                data: votesByCategory.map(row => row.count),
+                backgroundColor: categoryPalette,
+            }],
+        },
+    });
+
+    const responsesPerPoll = readJson('responses-per-poll-data');
+    new Chart(document.getElementById('responsesPerPollChart'), {
+        type: 'bar',
+        data: {
+            labels: responsesPerPoll.map(row => row.title),
+            datasets: [{ label: 'Responses', data: responsesPerPoll.map(row => row.responses), backgroundColor: palette.info }],
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } },
+        },
+    });
+
+    const mostPopular = readJson('most-popular-data');
+    new Chart(document.getElementById('mostPopularChart'), {
+        type: 'bar',
+        data: {
+            labels: mostPopular.map(row => row.title),
+            datasets: [{ label: 'Votes', data: mostPopular.map(row => row.responses), backgroundColor: palette.primary }],
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } },
+        },
+    });
+
+    const monthlyLabels = readJson('monthly-labels-data');
+    const monthlyPolls = readJson('monthly-polls-data');
+    new Chart(document.getElementById('monthlyActivityChart'), {
+        type: 'line',
+        data: {
+            labels: monthlyLabels,
+            datasets: [
+                { label: 'New Polls', data: monthlyPolls, borderColor: palette.warning, backgroundColor: 'transparent', tension: 0.3 },
+            ],
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } },
+    });
+
+    const mostActiveUsers = readJson('most-active-users-data');
+    new Chart(document.getElementById('mostActiveUsersChart'), {
+        type: 'bar',
+        data: {
+            labels: mostActiveUsers.map(row => row.voter__username),
+            datasets: [{ label: 'Votes Cast', data: mostActiveUsers.map(row => row.count), backgroundColor: palette.danger }],
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } },
+    });
+</script>
+{% endblock %}

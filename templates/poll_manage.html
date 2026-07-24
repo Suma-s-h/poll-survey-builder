@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage &mdash; {{ poll.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">{{ poll.title }}</h1>
+        {% if poll.description %}<p class="text-muted mb-1">{{ poll.description }}</p>{% endif %}
+        {% if poll.effective_status == 'active' %}
+            <span class="badge bg-success">Active</span>
+        {% elif poll.effective_status == 'draft' %}
+            <span class="badge bg-warning text-dark">Draft</span>
+        {% else %}
+            <span class="badge bg-secondary">Closed</span>
+        {% endif %}
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'poll_edit' poll.pk %}" class="btn btn-sm btn-outline-dark">Edit Poll</a>
+        <a href="{% url 'poll_vote' poll.pk %}" class="btn btn-sm btn-outline-primary">Voting Page</a>
+        <a href="{% url 'poll_results' poll.pk %}" class="btn btn-sm btn-outline-secondary">Results</a>
+        <form method="post" action="{% url 'poll_toggle_active' poll.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-dark">
+                {% if poll.effective_status == 'active' %}Close Poll{% else %}Reopen Poll{% endif %}
+            </button>
+        </form>
+        <form method="post" action="{% url 'poll_delete' poll.pk %}" onsubmit="return confirm('Delete this poll and all its data? This cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+        </form>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h5 mb-0">Questions</h2>
+    <a href="{% url 'question_create' poll.pk %}" class="btn btn-sm btn-primary">
+        <i class="bi bi-plus-lg"></i> Add Question
+    </a>
+</div>
+
+{% if questions %}
+    {% for question in questions %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <h6 class="card-title">{{ question.text }}</h6>
+                    <form method="post" action="{% url 'question_delete' poll.pk question.pk %}" onsubmit="return confirm('Delete this question?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0">Remove</button>
+                    </form>
+                </div>
+                <ul class="list-unstyled mb-0 mt-2">
+                    {% for choice in question.choices.all %}
+                        <li class="small text-muted">&bull; {{ choice.text }} ({{ choice.votes }} vote{{ choice.votes|pluralize }})</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <p class="text-muted">No questions yet. Add one to start collecting responses.</p>
+{% endif %}
+{% endblock %}

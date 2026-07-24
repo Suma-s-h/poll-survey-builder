@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ poll.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-start mb-1 gap-2 flex-wrap">
+            <h1 class="h3 mb-0">{{ poll.title }}</h1>
+            {% if poll.effective_status == 'active' %}
+                <span class="badge bg-success">Active</span>
+            {% elif poll.effective_status == 'draft' %}
+                <span class="badge bg-warning text-dark">Draft</span>
+            {% else %}
+                <span class="badge bg-secondary">Closed</span>
+            {% endif %}
+        </div>
+
+        <div class="mb-3 d-flex flex-wrap gap-2">
+            {% if poll.category %}<span class="badge text-bg-light border">{{ poll.category.name }}</span>{% endif %}
+            <span class="badge text-bg-light border">{% if poll.is_public %}Public{% else %}Private{% endif %}</span>
+            {% if poll.allow_multiple_choice %}<span class="badge text-bg-light border">Multiple Choice</span>{% endif %}
+            {% if poll.anonymous_voting %}<span class="badge text-bg-light border">Anonymous Voting</span>{% endif %}
+        </div>
+
+        {% if poll.description %}<p class="text-muted mb-3">{{ poll.description }}</p>{% endif %}
+
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <div class="stat-icon bg-{{ poll.creator.profile.avatar_color|default:'primary' }}-subtle text-{{ poll.creator.profile.avatar_color|default:'primary' }}" style="width:2.25rem;height:2.25rem;font-size:0.85rem;">
+                {{ poll.creator.username|slice:':2'|upper }}
+            </div>
+            <div class="small">
+                <div class="text-muted">Created by</div>
+                <div class="fw-semibold">{{ poll.creator.username }}</div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="text-muted small">Created</div>
+                <div class="fw-semibold">{{ poll.created_at|date:'M j, Y' }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-muted small">Closing Date</div>
+                <div class="fw-semibold">{% if poll.end_date %}{{ poll.end_date|date:'M j, Y' }}{% else %}No end date{% endif %}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-muted small">Total Votes</div>
+                <div class="fw-semibold">{{ poll.total_votes }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-muted small">Participants</div>
+                <div class="fw-semibold">{{ participant_count }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-muted small">Views</div>
+                <div class="fw-semibold"><i class="bi bi-eye"></i> {{ poll.view_count }}</div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body py-2">
+                <label class="form-label small text-muted mb-1">Share Link</label>
+                <div class="input-group">
+                    <input type="text" class="form-control form-control-sm" id="shareLinkInput" value="{{ share_url }}" readonly>
+                    <button class="btn btn-outline-secondary btn-sm" type="button" id="copyShareLink">
+                        <i class="bi bi-clipboard"></i> Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {% for question in questions %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="card-title mb-3">{{ question.text }}</h6>
+                    {% for choice in question.choices.all %}
+                        <div class="mb-3 {% if choice == question.winner %}p-2 rounded bg-success-subtle border border-success{% endif %}">
+                            <div class="choice-bar-label">
+                                <span>
+                                    {% if choice == question.winner %}<i class="bi bi-trophy-fill text-success"></i>{% endif %}
+                                    {{ choice.text }}
+                                </span>
+                                <span>{{ choice.votes }} vote{{ choice.votes|pluralize }} ({{ choice.vote_percentage }}%)</span>
+                            </div>
+                            <div class="progress progress-animated">
+                                <div class="progress-bar {% if choice == question.winner %}bg-success{% endif %} progress-bar-striped progress-bar-animated" role="progressbar"
+                                     style="width: {{ choice.vote_percentage }}%;"
+                                     aria-valuenow="{{ choice.vote_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-muted">This poll has no questions yet.</p>
+        {% endfor %}
+
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a href="{% url 'poll_vote' poll.pk %}" class="btn btn-primary">Vote</a>
+            <a href="{% url 'poll_results' poll.pk %}" class="btn btn-outline-secondary">Results</a>
+            {% if is_owner %}
+                <a href="{% url 'poll_edit' poll.pk %}" class="btn btn-outline-dark">Edit</a>
+                <a href="{% url 'poll_manage' poll.pk %}" class="btn btn-outline-dark">Manage Questions</a>
+            {% endif %}
+            <a href="{% url 'poll_list' %}" class="btn btn-outline-secondary">All Polls</a>
+        </div>
+
+        {% if related_polls %}
+            <div class="mb-4">
+                <h2 class="h6 mb-3">Related Polls</h2>
+                <div class="row g-3">
+                    {% for related in related_polls %}
+                        {% include 'partials/_poll_card.html' with poll=related %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h6 card-title mb-3"><i class="bi bi-clock-history"></i> Recent Votes</h2>
+                {% if recent_votes %}
+                    <ul class="list-group list-group-flush">
+                        {% for vote in recent_votes %}
+                            <li class="list-group-item px-0 d-flex justify-content-between small">
+                                <span>
+                                    {% if poll.anonymous_voting %}Anonymous{% else %}{{ vote.voter.username|default:'Anonymous' }}{% endif %}
+                                    voted for <strong>{{ vote.choice.text }}</strong>
+                                </span>
+                                <span class="text-muted">{{ vote.created_at|timesince }} ago</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted small mb-0">No votes yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-3" id="comments">
+            <div class="card-body">
+                <h2 class="h6 card-title mb-3"><i class="bi bi-chat-left-text"></i> Comments ({{ comments|length }})</h2>
+                {% for comment in comments %}
+                    <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ comment.author.username|default:'Deleted user' }}</strong>
+                            <span class="text-muted small">{{ comment.created_at|timesince }} ago</span>
+                        </div>
+                        <p class="mb-0 small">{{ comment.text }}</p>
+                    </div>
+                {% empty %}
+                    <p class="text-muted small mb-3">No comments yet. Be the first to share your thoughts.</p>
+                {% endfor %}
+
+                {% if user.is_authenticated %}
+                    <form method="post" class="mt-3">
+                        {% csrf_token %}
+                        {{ comment_form.text }}
+                        <div class="text-end mt-2">
+                            <button type="submit" class="btn btn-sm btn-primary">Post Comment</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <p class="text-muted small mb-0"><a href="/accounts/login/?next={{ request.path }}">Log in</a> to leave a comment.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h6 card-title mb-3"><i class="bi bi-hourglass-split"></i> Poll History</h2>
+                {% include 'partials/_activity_list.html' with activities=poll_history empty_message='No history recorded yet.' %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const copyBtn = document.getElementById('copyShareLink');
+        const shareInput = document.getElementById('shareLinkInput');
+        if (copyBtn && shareInput) {
+            copyBtn.addEventListener('click', function () {
+                navigator.clipboard.writeText(shareInput.value).then(function () {
+                    const original = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="bi bi-check-lg"></i> Copied';
+                    setTimeout(function () { copyBtn.innerHTML = original; }, 1500);
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

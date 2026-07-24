@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Search{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 mb-1">Search</h1>
+    {% if query %}
+        <p class="text-muted mb-0">Results for "<strong>{{ query }}</strong>"</p>
+    {% else %}
+        <p class="text-muted mb-0">Search across polls, users, categories, and answer options.</p>
+    {% endif %}
+</div>
+
+<form method="get" class="mb-4">
+    <div class="input-group">
+        <input type="search" name="q" value="{{ query }}" class="form-control" placeholder="Search polls, users, categories, or options...">
+        <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Search</button>
+    </div>
+</form>
+
+{% if query %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5 card-title mb-3">Polls <span class="text-muted fw-normal">({{ polls|length }})</span></h2>
+            {% if polls %}
+                <div class="row g-4">
+                    {% for poll in polls %}
+                        {% include 'partials/_poll_card.html' %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No polls match your search.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5 card-title mb-3">Users <span class="text-muted fw-normal">({{ users|length }})</span></h2>
+            {% if users %}
+                <ul class="list-group list-group-flush">
+                    {% for match_user in users %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><i class="bi bi-person-circle"></i> {{ match_user.username }}</span>
+                            <span class="text-muted small">{{ match_user.poll_count }} poll{{ match_user.poll_count|pluralize }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">No users match your search.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5 card-title mb-3">Categories <span class="text-muted fw-normal">({{ categories|length }})</span></h2>
+            {% if categories %}
+                <ul class="list-group list-group-flush">
+                    {% for category in categories %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <a href="{% url 'poll_list' %}?category={{ category.pk }}">{{ category.name }}</a>
+                            <span class="text-muted small">{{ category.poll_count }} poll{{ category.poll_count|pluralize }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">No categories match your search.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5 card-title mb-3">Responses <span class="text-muted fw-normal">({{ option_matches|length }})</span></h2>
+            {% if option_matches %}
+                <ul class="list-group list-group-flush">
+                    {% for choice in option_matches %}
+                        <li class="list-group-item px-0">
+                            <a href="{% url 'poll_detail' choice.question.poll_id %}">{{ choice.question.poll.title }}</a>
+                            <span class="text-muted"> &mdash; option "{{ choice.text }}"</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">No answer options match your search.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

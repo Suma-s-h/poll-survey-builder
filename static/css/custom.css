@@ -1,0 +1,58 @@
+body {
+    background-color: #f5f7fa;
+}
+
+.card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+}
+
+.progress {
+    height: 1.5rem;
+}
+
+.choice-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    margin-bottom: 0.15rem;
+}
+
+.vote-option {
+    cursor: pointer;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.vote-option:hover {
+    background-color: #eef4ff;
+}
+
+.stat-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.activity-dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    margin-top: 0.4rem;
+    flex-shrink: 0;
+}
+
+.poll-card .card-title {
+    min-height: 3rem;
+}
+
+.progress-animated .progress-bar {
+    transition: width 1s ease-in-out;
+}

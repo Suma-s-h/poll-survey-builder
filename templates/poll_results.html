@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}Results &mdash; {{ poll.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+            <h1 class="h3 mb-0">{{ poll.title }}</h1>
+            {% if poll.effective_status == 'active' %}
+                <span class="badge bg-success">Active</span>
+            {% elif poll.effective_status == 'draft' %}
+                <span class="badge bg-warning text-dark">Draft</span>
+            {% else %}
+                <span class="badge bg-secondary">Closed</span>
+            {% endif %}
+        </div>
+        {% if poll.description %}<p class="text-muted mb-3">{{ poll.description }}</p>{% endif %}
+
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-4">
+                <div class="text-muted small">Total Responses</div>
+                <div class="fw-semibold">{{ poll.total_votes }}</div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="text-muted small">Participants</div>
+                <div class="fw-semibold">{{ participant_count }}</div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="text-muted small">Options</div>
+                <div class="fw-semibold">{{ poll.total_options }}</div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="text-muted small">Participation Rate</div>
+                <div class="fw-semibold">{{ participation_rate }}%</div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="text-muted small">Average Votes / Option</div>
+                <div class="fw-semibold">{{ average_votes }}</div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="text-muted small">Most Selected Option</div>
+                <div class="fw-semibold">{% if most_selected_option %}{{ most_selected_option.text }}{% else %}&mdash;{% endif %}</div>
+            </div>
+        </div>
+
+        {% if results_chart %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h2 class="h6 card-title mb-3">Results Overview</h2>
+                    <canvas id="resultsChart" height="200"></canvas>
+                </div>
+            </div>
+        {% endif %}
+
+        {% for question in questions %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="card-title mb-3">{{ question.text }}</h6>
+
+                    {% if question.winner %}
+                        <div class="alert alert-success py-2 px-3 d-flex align-items-center gap-2 mb-3">
+                            <i class="bi bi-trophy-fill"></i>
+                            <span>Winner: <strong>{{ question.winner.text }}</strong> with {{ question.winner.votes }} vote{{ question.winner.votes|pluralize }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% for choice in question.ranked_choices %}
+                        <div class="mb-3">
+                            <div class="choice-bar-label">
+                                <span>
+                                    <span class="badge text-bg-light border me-1">#{{ forloop.counter }}</span>
+                                    {{ choice.text }}
+                                </span>
+                                <span>{{ choice.votes }} vote{{ choice.votes|pluralize }} ({{ choice.vote_percentage }}%)</span>
+                            </div>
+                            <div class="progress progress-animated">
+                                <div class="progress-bar {% if forloop.first %}bg-success{% endif %} progress-bar-striped progress-bar-animated"
+                                     role="progressbar" style="width: {{ choice.vote_percentage }}%;"
+                                     aria-valuenow="{{ choice.vote_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <p class="text-muted small mb-0">Total responses: {{ question.total_votes }}</p>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-muted">This poll has no questions yet.</p>
+        {% endfor %}
+
+        <div class="d-flex flex-wrap gap-2">
+            {% if poll.is_open_for_voting %}
+                <a href="{% url 'poll_vote' poll.pk %}" class="btn btn-outline-primary">Back to Voting</a>
+            {% endif %}
+            <a href="{% url 'poll_detail' poll.pk %}" class="btn btn-outline-secondary">Poll Details</a>
+            <a href="{% url 'poll_export_csv' poll.pk %}" class="btn btn-outline-dark"><i class="bi bi-filetype-csv"></i> Export CSV</a>
+            <a href="{% url 'poll_export_json' poll.pk %}" class="btn btn-outline-dark"><i class="bi bi-filetype-json"></i> Export JSON</a>
+            <a href="{% url 'poll_list' %}" class="btn btn-outline-secondary">All Polls</a>
+        </div>
+    </div>
+</div>
+
+{{ results_chart|json_script:"results-chart-data" }}
+{% endblock %}
+
+{% block extra_js %}
+{% if results_chart %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    const resultsData = JSON.parse(document.getElementById('results-chart-data').textContent);
+    new Chart(document.getElementById('resultsChart'), {
+        type: 'bar',
+        data: {
+            labels: resultsData.map(row => row.label),
+            datasets: [{ label: 'Votes', data: resultsData.map(row => row.votes), backgroundColor: '#0d6efd' }],
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } },
+    });
+</script>
+{% endif %}
+{% endblock %}

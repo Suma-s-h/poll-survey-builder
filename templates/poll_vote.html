@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Vote &mdash; {{ poll.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h1 class="h3 mb-1">{{ poll.title }}</h1>
+        {% if poll.description %}<p class="text-muted mb-2">{{ poll.description }}</p>{% endif %}
+        {% if poll.allow_multiple_choice %}
+            <p class="text-muted small mb-4"><i class="bi bi-info-circle"></i> You may select more than one option per question.</p>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {% for question in questions %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3">{{ forloop.counter }}. {{ question.text }}</h6>
+                        {% for choice in question.choices.all %}
+                            <label class="vote-option d-block mb-2">
+                                {% if poll.allow_multiple_choice %}
+                                    <input class="form-check-input me-2" type="checkbox" name="question_{{ question.pk }}" value="{{ choice.pk }}">
+                                {% else %}
+                                    <input class="form-check-input me-2" type="radio" name="question_{{ question.pk }}" value="{{ choice.pk }}" required>
+                                {% endif %}
+                                {{ choice.text }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'poll_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Submit Vote</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
