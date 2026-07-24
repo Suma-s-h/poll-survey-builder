@@ -57,3 +57,5 @@ dist/
 
 # IDE
 .idea/
+
+.claude/
